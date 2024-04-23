@@ -44,6 +44,8 @@ const db = mysql.createConnection({
 app.get("/", (req, res) => {
   if (req.session.username) {
     if (req.session.isAdmin) {
+      console.log(req.session.username);
+      console.log(true);
       return res.json({
         valid: true,
         username: req.session.username,
