@@ -1,11 +1,29 @@
 "use client";
-import { useState } from "react";
+import { useEffect } from "react";
 import useSignUpForm from "./useSignUpForm";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 
 const SignUpClient: React.FC = () => {
   const { user, errors, handleInput, handleSubmit } = useSignUpForm();
   const router = useRouter();
+
+  axios.defaults.withCredentials = true;
+
+  useEffect(() => {
+    axios
+      .get("http://localhost:8081/")
+      .then((res) => {
+        if (res.data.valid) {
+          if (res.data.admin) {
+            router.push("/home-admin");
+          } else {
+            router.push("/home-employee");
+          }
+        }
+      })
+      .catch((err) => console.log(err));
+  }, []);
 
   const handleNavigate = (path: string) => {
     router.push(path);
