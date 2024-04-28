@@ -120,7 +120,7 @@ app.post("/Login", (req, res) => {
 
           if (result) {
             req.session.username = adminData[0].username;
-            req.session.admin_id = adminData[0].admin_id;
+            req.session.admin = adminData[0].username;
             req.session.isAdmin = true;
 
             connection.release();
@@ -153,7 +153,7 @@ app.post("/Login", (req, res) => {
 
               if (result) {
                 req.session.username = employeeData[0].username;
-                req.session.admin_id = employeeData[0].admin_id;
+                req.session.admin = employeeData[0].admin;
                 req.session.isAdmin = false;
 
                 return res.json({ Login: true, Admin: false, error: "" });
@@ -181,8 +181,8 @@ app.post("/Login", (req, res) => {
 
 app.get("/Products", async (req, res) => {
   try {
-    const sql = "SELECT * FROM product WHERE admin_id = ?";
-    const [rows, fields] = await db.promise().query(sql, [req.session.admin_id]);
+    const sql = "SELECT * FROM product WHERE admin = ?";
+    const [rows, fields] = await db.promise().query(sql, [req.session.admin]);
     return res.json(rows);
   } catch (err) {
     console.error("Error fetching products:", err);
@@ -205,13 +205,13 @@ app.delete("/DeleteProduct", async (req, res) => {
 app.post("/AddProduct", async (req, res) => {
   try {
     const sql =
-      "INSERT INTO product(`product_id`, `Name`, `Price`, `Quantity`, `admin_id`) VALUES (?, ?, ?, ?, ?)";
+      "INSERT INTO product(`product_id`, `Name`, `Price`, `Quantity`, `admin`) VALUES (?, ?, ?, ?, ?)";
     const values = [
       req.body.product_id,
       req.body.name,
       req.body.price,
       req.body.quantity,
-      req.session.admin_id,
+      req.session.admin,
     ];
     const [rows, fields] = await db.promise().query(sql, values);
     return res.json({ success: true });
@@ -220,7 +220,6 @@ app.post("/AddProduct", async (req, res) => {
     return res.status(500).json({ error: "Error adding product" });
   }
 });
-
 
 app.get("/CheckProductID", async (req, res) => {
   try {
@@ -233,17 +232,17 @@ app.get("/CheckProductID", async (req, res) => {
   }
 });
 
-
 app.post("/AddEmployee", async (req, res) => {
   try {
     const hash = await bcrypt.hash(req.body.password, saltRounds);
+    const adminUsername = req.session.admin || req.body.admin; // Use session if available, otherwise use request body
     const sql =
-      "INSERT INTO employee(`username`, `password`, `email`, `admin_id`) VALUES (?, ?, ?, ?)";
+      "INSERT INTO employee(`username`, `password`, `email`, `admin`) VALUES (?, ?, ?, ?)";
     const values = [
       req.body.username,
       hash,
       req.body.email,
-      req.session.admin_id,
+      adminUsername, // Use the determined admin username
     ];
     const [rows, fields] = await db.promise().query(sql, values);
     return res.json({ success: true });
@@ -253,10 +252,11 @@ app.post("/AddEmployee", async (req, res) => {
   }
 });
 
+
 app.get("/GetEmployees", async (req, res) => {
   try {
-    const sql = "SELECT * FROM employee WHERE admin_id = ?";
-    const [rows, fields] = await db.promise().query(sql, [req.session.admin_id]);
+    const sql = "SELECT * FROM employee WHERE admin = ?";
+    const [rows, fields] = await db.promise().query(sql, [req.session.admin]);
     return res.json(rows);
   } catch (err) {
     console.error("Error fetching employees:", err);
@@ -266,8 +266,8 @@ app.get("/GetEmployees", async (req, res) => {
 
 app.get("/CheckProductIDs", async (req, res) => {
   try {
-    const sql = "SELECT * FROM product WHERE product_id = ? AND admin_id = ?";
-    const [rows, fields] = await db.promise().query(sql, [req.query.product_id, req.session.admin_id]);
+    const sql = "SELECT * FROM product WHERE product_id = ? AND admin = ?";
+    const [rows, fields] = await db.promise().query(sql, [req.query.product_id, req.session.admin]);
     return res.json({ exists: rows.length > 0, product: rows.length > 0 ? rows[0].Name : null });
   } catch (err) {
     console.error("Error checking product ID:", err);
@@ -316,12 +316,12 @@ app.post("/Checkout", async (req, res) => {
         const values = [
           item.product_id,
           item.productName,
-          req.session.admin_id,
+          req.session.admin,
           item.quantity,
           new Date().toISOString().slice(0, 19).replace("T", " "), // Current date and time
         ];
         const sql =
-          "INSERT INTO sold_products(`product_id`, `name`, `admin_id`, `quantity`, `date_sold`) VALUES (?)";
+          "INSERT INTO sold_products(`product_id`, `name`, `admin`, `quantity`, `date_sold`) VALUES (?)";
         await db.promise().query(sql, [values]);
 
         const updateSql =
@@ -341,11 +341,10 @@ app.post("/Checkout", async (req, res) => {
   }
 });
 
-
 app.get("/SoldProducts", async (req, res) => {
   try {
-    const sql = "SELECT * FROM sold_products WHERE admin_id = ?";
-    const [rows, fields] = await db.promise().query(sql, [req.session.admin_id]);
+    const sql = "SELECT * FROM sold_products WHERE admin = ?";
+    const [rows, fields] = await db.promise().query(sql, [req.session.admin]);
     return res.json(rows);
   } catch (err) {
     console.error("Error fetching sold products:", err);
@@ -375,7 +374,7 @@ app.post("/EditEmployee", async (req, res) => {
   try {
     const hash = await bcrypt.hash(req.body.password, saltRounds);
     const sql =
-      "UPDATE employee SET username = ?, password = ?, email = ? WHERE admin_id = ?";
+      "UPDATE employee SET username = ?, password = ?, email = ? WHERE admin = ?";
     const values = [
       req.body.username,
       hash,
