@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 
 
@@ -16,6 +17,8 @@ const useLoginForm = () => {
   const [user, setUser] = useState<User>({ email: "", password: "" });
   const [errors, setErrors] = useState<Errors>({});
 
+  const router = useRouter();
+  
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setUser((prevUser) => ({ ...prevUser, [name]: value }));
@@ -40,7 +43,7 @@ const useLoginForm = () => {
           setErrors(newErrors);
         } else {
           const path = response.data.Admin ? "/home-admin" : "/home-employee";
-          navigate(path);
+          router.push(path);
           
         }
       } catch (error) {

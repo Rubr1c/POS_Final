@@ -1,4 +1,5 @@
 const express = require("express");
+
 const mysql = require("mysql2");
 const cors = require("cors");
 
@@ -8,7 +9,6 @@ const bodyParser = require("body-parser");
 
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
-
 
 const app = express();
 app.use(
@@ -72,20 +72,20 @@ app.post("/SignUp", (req, res) => {
 
     db.getConnection((err, connection) => {
       if (err) {
-        console.error('Error getting connection:', err);
-        return res.status(500).json({ error: 'Database connection error' });
+        console.error("Error getting connection:", err);
+        return res.status(500).json({ error: "Database connection error" });
       }
 
-      const sql =
+      const insertSql =
         "INSERT INTO admins(`username`, `email`, `password`) VALUES (?)";
-      const values = [req.body.username, req.body.email, hash];
+      const insertValues = [req.body.username, req.body.email, hash];
 
-      connection.query(sql, [values], (err, data) => {
-        connection.release(); // Release the connection after query execution
+      connection.query(insertSql, [insertValues], (err, data) => {
+        connection.release();
 
         if (err) {
-          console.error('Error executing query:', err);
-          return res.status(500).json({ error: 'Query execution error' });
+          console.error("Error executing insert query:", err);
+          return res.status(500).json({ error: "Query execution error" });
         }
 
         return res.json({ success: true });
@@ -94,77 +94,93 @@ app.post("/SignUp", (req, res) => {
   });
 });
 
-
 app.post("/Login", (req, res) => {
   let sql = "SELECT * FROM admins WHERE email = ?";
   db.getConnection((err, connection) => {
     if (err) {
-      console.error('Error getting connection:', err);
-      return res.status(500).json({ error: 'Database connection error' });
+      console.error("Error getting connection:", err);
+      return res.status(500).json({ error: "Database connection error" });
     }
 
     connection.query(sql, [req.body.email], (err, adminData) => {
       if (err) {
         connection.release();
-        console.error('Error executing query:', err);
-        return res.status(500).json({ error: 'Error querying database' });
+        console.error("Error executing query:", err);
+        return res.status(500).json({ error: "Error querying database" });
       }
 
       if (adminData.length > 0) {
-        bcrypt.compare(req.body.password, adminData[0].password, (err, result) => {
-          if (err) {
-            connection.release();
-            console.error('Error comparing passwords:', err);
-            return res.status(500).json({ error: 'Error comparing passwords' });
-          }
+        bcrypt.compare(
+          req.body.password,
+          adminData[0].password,
+          (err, result) => {
+            if (err) {
+              connection.release();
+              console.error("Error comparing passwords:", err);
+              return res
+                .status(500)
+                .json({ error: "Error comparing passwords" });
+            }
 
-          if (result) {
-            req.session.username = adminData[0].username;
-            req.session.admin_id = adminData[0].admin_id;
-            req.session.isAdmin = true;
+            if (result) {
+              req.session.username = adminData[0].username;
+              req.session.admin = adminData[0].username;
+              req.session.isAdmin = true;
 
-            connection.release();
-            return res.json({ Login: true, Admin: true, error: "" });
-          } else {
-            connection.release();
-            return res.json({
-              Login: false,
-              Admin: false,
-              error: "Invalid password",
-            });
+              connection.release();
+              return res.json({
+                Login: true,
+                Admin: true,
+                error: "",
+                Username: adminData[0].username,
+                AdminName: adminData[0].username,
+              });
+            }
           }
-        });
+        );
       } else {
         sql = "SELECT * FROM employee WHERE email = ?";
         connection.query(sql, [req.body.email], (err, employeeData) => {
           connection.release();
 
           if (err) {
-            console.error('Error executing query:', err);
-            return res.status(500).json({ error: 'Error querying database' });
+            console.error("Error executing query:", err);
+            return res.status(500).json({ error: "Error querying database" });
           }
 
           if (employeeData.length > 0) {
-            bcrypt.compare(req.body.password, employeeData[0].password, (err, result) => {
-              if (err) {
-                console.error('Error comparing passwords:', err);
-                return res.status(500).json({ error: 'Error comparing passwords' });
-              }
+            bcrypt.compare(
+              req.body.password,
+              employeeData[0].password,
+              (err, result) => {
+                if (err) {
+                  console.error("Error comparing passwords:", err);
+                  return res
+                    .status(500)
+                    .json({ error: "Error comparing passwords" });
+                }
 
-              if (result) {
-                req.session.username = employeeData[0].username;
-                req.session.admin_id = employeeData[0].admin_id;
-                req.session.isAdmin = false;
+                if (result) {
+                  req.session.username = employeeData[0].username;
+                  req.session.admin = employeeData[0].admin;
+                  req.session.isAdmin = false;
 
-                return res.json({ Login: true, Admin: false, error: "" });
-              } else {
-                return res.json({
-                  Login: false,
-                  Admin: false,
-                  error: "Invalid password",
-                });
+                  return res.json({
+                    Login: true,
+                    Admin: false,
+                    error: "",
+                    Username: employeeData[0].username,
+                    AdminName: employeeData[0].admin,
+                  });
+                } else {
+                  return res.json({
+                    Login: false,
+                    Admin: false,
+                    error: "Invalid password",
+                  });
+                }
               }
-            });
+            );
           } else {
             return res.json({
               Login: false,
@@ -178,11 +194,11 @@ app.post("/Login", (req, res) => {
   });
 });
 
-
 app.get("/Products", async (req, res) => {
+  req.session.admin = req.session.admin ? req.session.admin : req.query.admin;
   try {
-    const sql = "SELECT * FROM product WHERE admin_id = ?";
-    const [rows, fields] = await db.promise().query(sql, [req.session.admin_id]);
+    const sql = "SELECT * FROM product WHERE admin = ?";
+    const [rows, fields] = await db.promise().query(sql, [req.session.admin]);
     return res.json(rows);
   } catch (err) {
     console.error("Error fetching products:", err);
@@ -190,28 +206,16 @@ app.get("/Products", async (req, res) => {
   }
 });
 
-
-app.delete("/DeleteProduct", async (req, res) => {
-  try {
-    const sql = "DELETE FROM product WHERE product_id = ?";
-    const [rows, fields] = await db.promise().query(sql, [req.query.product_id]);
-    return res.json({ success: true });
-  } catch (err) {
-    console.error("Error deleting product:", err);
-    return res.status(500).json({ error: "Error deleting product" });
-  }
-});
-
 app.post("/AddProduct", async (req, res) => {
   try {
     const sql =
-      "INSERT INTO product(`product_id`, `Name`, `Price`, `Quantity`, `admin_id`) VALUES (?, ?, ?, ?, ?)";
+      "INSERT INTO product(`product_id`, `Name`, `Price`, `Quantity`, `admin`) VALUES (?, ?, ?, ?, ?)";
     const values = [
       req.body.product_id,
       req.body.name,
       req.body.price,
       req.body.quantity,
-      req.session.admin_id,
+      req.session.admin || req.body.admin,
     ];
     const [rows, fields] = await db.promise().query(sql, values);
     return res.json({ success: true });
@@ -221,11 +225,43 @@ app.post("/AddProduct", async (req, res) => {
   }
 });
 
+app.delete("/DeleteProduct", async (req, res) => {
+  try {
+    const sql = "DELETE FROM product WHERE product_id = ?";
+    const [rows, fields] = await db
+      .promise()
+      .query(sql, [req.query.product_id]);
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("Error deleting product:", err);
+    return res.status(500).json({ error: "Error deleting product" });
+  }
+});
+
+app.post("/EditProduct", async (req, res) => {
+  try {
+    const sql =
+      "UPDATE product SET Name = ?, Price = ?, Quantity = ? WHERE product_id = ?";
+    const values = [
+      req.body.Name,
+      req.body.Price,
+      req.body.Quantity,
+      req.body.product_id,
+    ];
+    const [rows, fields] = await db.promise().query(sql, values);
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("Error editing product:", err);
+    return res.status(500).json({ error: "Error editing product" });
+  }
+});
 
 app.get("/CheckProductID", async (req, res) => {
   try {
     const sql = "SELECT * FROM product WHERE product_id = ?";
-    const [rows, fields] = await db.promise().query(sql, [req.query.product_id]);
+    const [rows, fields] = await db
+      .promise()
+      .query(sql, [req.query.product_id]);
     return res.json({ exists: rows.length > 0 });
   } catch (err) {
     console.error("Error checking product ID:", err);
@@ -233,18 +269,53 @@ app.get("/CheckProductID", async (req, res) => {
   }
 });
 
+app.get("/CheckProductIDs", async (req, res) => {
+  try {
+    const sql = "SELECT * FROM product WHERE product_id = ? AND admin = ?";
+    const [rows, fields] = await db
+      .promise()
+      .query(sql, [req.query.product_id, req.session.admin]);
+    return res.json({
+      exists: rows.length > 0,
+      product: rows.length > 0 ? rows[0].Name : null,
+    });
+  } catch (err) {
+    console.error("Error checking product ID:", err);
+    return res.status(500).json({ error: "Error checking product ID" });
+  }
+});
+
+app.get("/SoldProducts", async (req, res) => {
+  try {
+    const sql = "SELECT * FROM sold_products WHERE admin = ?";
+    const [rows, fields] = await db.promise().query(sql, [req.session.admin]);
+    return res.json(rows);
+  } catch (err) {
+    console.error("Error fetching sold products:", err);
+    return res.status(500).json({ error: "Error fetching sold products" });
+  }
+});
+
+app.get("/GetItemPrice", async (req, res) => {
+  try {
+    const sql = "SELECT Price FROM product WHERE product_id = ?";
+    const [rows, fields] = await db
+      .promise()
+      .query(sql, [req.query.product_id]);
+    return res.json(rows[0]);
+  } catch (err) {
+    console.error("Error fetching price:", err);
+    return res.status(500).json({ error: "Error fetching price" });
+  }
+});
 
 app.post("/AddEmployee", async (req, res) => {
   try {
     const hash = await bcrypt.hash(req.body.password, saltRounds);
+    const adminUsername = req.session.admin || req.body.admin;
     const sql =
-      "INSERT INTO employee(`username`, `password`, `email`, `admin_id`) VALUES (?, ?, ?, ?)";
-    const values = [
-      req.body.username,
-      hash,
-      req.body.email,
-      req.session.admin_id,
-    ];
+      "INSERT INTO employee(`username`, `password`, `email`, `admin`) VALUES (?, ?, ?, ?)";
+    const values = [req.body.username, hash, req.body.email, adminUsername];
     const [rows, fields] = await db.promise().query(sql, values);
     return res.json({ success: true });
   } catch (err) {
@@ -255,8 +326,8 @@ app.post("/AddEmployee", async (req, res) => {
 
 app.get("/GetEmployees", async (req, res) => {
   try {
-    const sql = "SELECT * FROM employee WHERE admin_id = ?";
-    const [rows, fields] = await db.promise().query(sql, [req.session.admin_id]);
+    const sql = "SELECT * FROM employee WHERE admin = ?";
+    const [rows, fields] = await db.promise().query(sql, [req.session.admin]);
     return res.json(rows);
   } catch (err) {
     console.error("Error fetching employees:", err);
@@ -264,25 +335,22 @@ app.get("/GetEmployees", async (req, res) => {
   }
 });
 
-app.get("/CheckProductIDs", async (req, res) => {
+app.post("/EditEmployee", async (req, res) => {
   try {
-    const sql = "SELECT * FROM product WHERE product_id = ? AND admin_id = ?";
-    const [rows, fields] = await db.promise().query(sql, [req.query.product_id, req.session.admin_id]);
-    return res.json({ exists: rows.length > 0, product: rows.length > 0 ? rows[0].Name : null });
+    const hash = await bcrypt.hash(req.body.password, saltRounds);
+    const sql =
+      "UPDATE employee SET username = ?, password = ?, email = ? WHERE admin = ?";
+    const values = [
+      req.body.username,
+      hash,
+      req.body.email,
+      req.session.admin_id,
+    ];
+    const [rows, fields] = await db.promise().query(sql, values);
+    return res.json({ success: true });
   } catch (err) {
-    console.error("Error checking product ID:", err);
-    return res.status(500).json({ error: "Error checking product ID" });
-  }
-});
-
-app.get("/GetItemPrice", async (req, res) => {
-  try {
-    const sql = "SELECT Price FROM product WHERE product_id = ?";
-    const [rows, fields] = await db.promise().query(sql, [req.query.product_id]);
-    return res.json(rows[0]);
-  } catch (err) {
-    console.error("Error fetching price:", err);
-    return res.status(500).json({ error: "Error fetching price" });
+    console.error("Error editing employee:", err);
+    return res.status(500).json({ error: "Error editing employee" });
   }
 });
 
@@ -316,12 +384,12 @@ app.post("/Checkout", async (req, res) => {
         const values = [
           item.product_id,
           item.productName,
-          req.session.admin_id,
+          req.session.admin,
           item.quantity,
           new Date().toISOString().slice(0, 19).replace("T", " "), // Current date and time
         ];
         const sql =
-          "INSERT INTO sold_products(`product_id`, `name`, `admin_id`, `quantity`, `date_sold`) VALUES (?)";
+          "INSERT INTO sold_products(`product_id`, `name`, `admin`, `quantity`, `date_sold`) VALUES (?)";
         await db.promise().query(sql, [values]);
 
         const updateSql =
@@ -338,55 +406,6 @@ app.post("/Checkout", async (req, res) => {
   } catch (err) {
     console.error("Error in checkout:", err);
     return res.status(500).json({ error: "Error in checkout" });
-  }
-});
-
-
-app.get("/SoldProducts", async (req, res) => {
-  try {
-    const sql = "SELECT * FROM sold_products WHERE admin_id = ?";
-    const [rows, fields] = await db.promise().query(sql, [req.session.admin_id]);
-    return res.json(rows);
-  } catch (err) {
-    console.error("Error fetching sold products:", err);
-    return res.status(500).json({ error: "Error fetching sold products" });
-  }
-});
-
-app.post("/EditProduct", async (req, res) => {
-  try {
-    const sql =
-      "UPDATE product SET Name = ?, Price = ?, Quantity = ? WHERE product_id = ?";
-    const values = [
-      req.body.Name,
-      req.body.Price,
-      req.body.Quantity,
-      req.body.product_id,
-    ];
-    const [rows, fields] = await db.promise().query(sql, values);
-    return res.json({ success: true });
-  } catch (err) {
-    console.error("Error editing product:", err);
-    return res.status(500).json({ error: "Error editing product" });
-  }
-});
-
-app.post("/EditEmployee", async (req, res) => {
-  try {
-    const hash = await bcrypt.hash(req.body.password, saltRounds);
-    const sql =
-      "UPDATE employee SET username = ?, password = ?, email = ? WHERE admin_id = ?";
-    const values = [
-      req.body.username,
-      hash,
-      req.body.email,
-      req.session.admin_id,
-    ];
-    const [rows, fields] = await db.promise().query(sql, values);
-    return res.json({ success: true });
-  } catch (err) {
-    console.error("Error editing employee:", err);
-    return res.status(500).json({ error: "Error editing employee" });
   }
 });
 

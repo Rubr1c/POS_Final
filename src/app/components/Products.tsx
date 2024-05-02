@@ -12,6 +12,9 @@ interface Product {
 
 function Products() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [isEditWindowVisible, setIsEditWindowVisible] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     axios
@@ -26,13 +29,13 @@ function Products() {
     const node = document.getElementById(id);
     if (node) {
       toPng(node)
-        .then((dataUrl : string) => {
+        .then((dataUrl: string) => {
           const link = document.createElement("a");
-          link.download = "barcode.png";
+          link.download = `barcode-${id}.png`;
           link.href = dataUrl;
           link.click();
         })
-        .catch((error : Error) => {
+        .catch((error: Error) => {
           console.error("Error generating barcode image:", error);
         });
     }
@@ -45,142 +48,162 @@ function Products() {
   );
 
   const openEditWindow = (product: Product) => {
-    const editNameInput = document.getElementById("editName") as HTMLInputElement | null;
-    const editPriceInput = document.getElementById("editPrice") as HTMLInputElement | null;
-    const editQuantityInput = document.getElementById("editQuantity") as HTMLInputElement | null;
-    const productIdElement = document.getElementById("productID");
+    const productToEdit: Product = {
+      product_id: product.product_id,
+      Name: product.Name,
+      Price: product.Price,
+      Quantity: product.Quantity,
+    };
 
-    if (editNameInput && editPriceInput && editQuantityInput && productIdElement) {
-      editNameInput.value = product.Name;
-      editPriceInput.value = product.Price.toString();
-      editQuantityInput.value = product.Quantity.toString();
-      productIdElement.innerText = product.product_id;
-      document.getElementById("error-message")?.classList.add("hidden");
-
-      document.getElementById("edit-window")?.classList.remove("hidden");
-    }
+    setSelectedProduct(product);
+    setIsEditWindowVisible(true);
+    setErrorMessage("");
   };
 
   const closeEditWindow = () => {
-    document.getElementById("edit-window")?.classList.add("hidden");
+    setIsEditWindowVisible(false);
   };
 
-  const saveChanges = () => {
-    const productIdElement = document.getElementById("productID");
-    const editNameInput = document.getElementById("editName") as HTMLInputElement | null;
-    const editPriceInput = document.getElementById("editPrice") as HTMLInputElement | null;
-    const editQuantityInput = document.getElementById("editQuantity") as HTMLInputElement | null;
-
-    if (productIdElement && editNameInput && editPriceInput && editQuantityInput) {
-      const productId = productIdElement.innerText;
-      const editName = editNameInput.value;
-      const editPrice = parseFloat(editPriceInput.value);
-      const editQuantity = parseInt(editQuantityInput.value);
-
-      const updatedProduct = {
-        product_id: productId,
-        Name: editName,
-        Price: editPrice,
-        Quantity: editQuantity,
-      };
-
-      axios
-        .post("http://localhost:8081/EditProduct", updatedProduct)
-        .then((res) => {
-          if (res.data.success) return closeEditWindow();
-
-          const errorMessageElement = document.getElementById("error-message");
-          if (errorMessageElement) {
-            errorMessageElement.innerText = res.data.error;
-            errorMessageElement.classList.remove("hidden");
-          }
-        })
-        .catch((err) => console.log(err));
+  const saveChanges = async () => {
+    if (selectedProduct) {
+      try {
+        const response = await axios.post(
+          "http://localhost:8081/EditProduct",
+          selectedProduct
+        );
+        if (response.data.success) {
+          closeEditWindow();
+        } else {
+          setErrorMessage(response.data.error);
+        }
+      } catch (error) {
+        console.log(error);
+      }
     }
   };
 
   const deleteProduct = () => {
-    const productIdElement = document.getElementById("productID");
-    if (productIdElement) {
-      const productId = productIdElement.innerText;
-      axios
-        .delete("http://localhost:8081/DeleteProduct", {
-          params: {
-            product_id: productId,
-          },
-        })
-        .then((res) => {
-          if (res.data.success) return closeEditWindow();
+    const productId = selectedProduct?.product_id;
 
-          const errorMessageElement = document.getElementById("error-message");
-          if (errorMessageElement) {
-            errorMessageElement.innerText = res.data.error;
-            errorMessageElement.classList.remove("hidden");
-          }
-        });
-    }
+    axios
+      .delete("http://localhost:8081/DeleteProduct", {
+        params: {
+          product_id: productId,
+        },
+      })
+      .then((res) => {
+        if (res.data.success) return closeEditWindow();
+
+        const errorMessageElement = document.getElementById("error-message");
+        if (errorMessageElement) {
+          errorMessageElement.innerText = res.data.error;
+          errorMessageElement.classList.remove("hidden");
+        }
+      });
   };
 
   return (
     <>
-      {products.map((product) => (
-        <div
-          key={product.product_id}
-          className="bg-info bg-gradient text-center inline-flex flex-col p-2 m-3 border border-dark rounded-3"
-        >
-          <h3>{product.Name}</h3>
-          <p>Price: {product.Price}</p>
-          <p>Quantity: {product.Quantity}</p>
-          {generateBarcode(product.product_id)}
-          <button
-            className="mt-2 btn btn-dark"
-            onClick={() => downloadBarcode(product.product_id)}
+      <h2 className="text-white text-2xl font-bold p-4"> Products </h2>
+
+      <div className="overflow-y-auto max-h-[calc(100vh-4rem)] pb-52">
+        {products.map((product) => (
+          <div
+            key={product.product_id}
+            className="bg-gradient-to-b from-white to-[#9d9d9d] text-center inline-flex flex-col p-2 m-3 border-2 border-dark rounded-lg border-black shadow-lg shadow-purple-500/50 dark:shadow-lg dark:shadow-purple-800/80"
           >
-            Download
-          </button>
-          <button
-            className="mt-2 btn btn-dark"
-            onClick={() => openEditWindow(product)}
-          >
-            Edit
-          </button>
-        </div>
-      ))}
-      <div id="edit-window" className="hidden">
-        <div className="flex items-center justify-between">
-          <h1 className="">Edit Product</h1>
-          <button
-            id="close-button"
-            onClick={closeEditWindow}
-            className="text-danger bg-transparent border-0 text-3xl p-0"
-          >
-            ✘
-          </button>
-        </div>
-        <input type="text" className="m-3" id="editName" name="Name" />
-        <input
-          type="number"
-          step="any"
-          className="m-3"
-          id="editPrice"
-          name="Price"
-        />
-        <input
-          type="number"
-          className="m-3"
-          id="editQuantity"
-          name="Quantity"
-        />
-        <br />
-        <button className="m-3 btn btn-success" onClick={saveChanges}>
-          Save
-        </button>
-        <button className="m-3 btn btn-danger" onClick={deleteProduct}>
-          Delete
-        </button>
-        <p className="hidden" id="productID"></p>
-        <p className="hidden" id="error-message"></p>
+            <h3 className="font-bold text-2xl mb-5">{product.Name}</h3>
+            <p>Price: ${product.Price}</p>
+            <p className="mb-5">Quantity: {product.Quantity}</p>
+            {generateBarcode(product.product_id)}
+            <button
+              className="mt-5 text-white bg-gradient-to-r from-green-400 via-green-500 to-green-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-green-300 dark:focus:ring-green-800 shadow-lg shadow-green-500/50 dark:shadow-lg dark:shadow-green-800/80 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2"
+              onClick={() => downloadBarcode(product.product_id)}
+            >
+              Download
+            </button>
+            <button
+              className="mt-2 text-white bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-teal-300 dark:focus:ring-teal-800 shadow-lg shadow-teal-500/50 dark:shadow-lg dark:shadow-teal-800/80 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2"
+              onClick={() => openEditWindow(product)}
+            >
+              Edit
+            </button>
+          </div>
+        ))}
       </div>
+      {isEditWindowVisible && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <div className="flex justify-between items-center">
+              <h1 className="text-xl font-bold">Edit Product</h1>
+              <button
+                onClick={closeEditWindow}
+                className="text-red-500 text-3xl"
+              >
+                
+              </button>
+            </div>
+            <input
+              type="text"
+              value={selectedProduct?.Name}
+              onChange={(e) =>
+                setSelectedProduct(
+                  selectedProduct
+                    ? { ...selectedProduct, Name: e.target.value }
+                    : null
+                )
+              }
+              className="mt-3 mb-3 block w-full px-4 py-2 border rounded-md"
+            />
+            <input
+              type="number"
+              step="any"
+              value={selectedProduct?.Price}
+              onChange={(e) =>
+                setSelectedProduct(
+                  selectedProduct
+                    ? {
+                        ...selectedProduct,
+                        Price: parseFloat(e.target.value) || 0,
+                      }
+                    : null
+                )
+              }
+              className="mt-3 mb-3 block w-full px-4 py-2 border rounded-md"
+            />
+            <input
+              type="number"
+              value={selectedProduct?.Quantity}
+              onChange={(e) =>
+                setSelectedProduct(
+                  selectedProduct
+                    ? {
+                        ...selectedProduct,
+                        Price: parseFloat(e.target.value) || 0,
+                      }
+                    : null
+                )
+              }
+              className="mt-3 mb-3 block w-full px-4 py-2 border rounded-md"
+            />
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={saveChanges}
+                className="text-white bg-gradient-to-r from-green-400 via-green-500 to-green-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-green-300 dark:focus:ring-green-800 shadow-lg shadow-green-500/50 dark:shadow-lg dark:shadow-green-800/80 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2"
+              >
+                Save
+              </button>
+              <button
+                onClick={deleteProduct}
+                className="text-white bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 shadow-lg shadow-red-500/50 dark:shadow-lg dark:shadow-red-800/80 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2"
+              >
+                Delete
+              </button>
+            </div>
+            {errorMessage && <p className="text-red-500">{errorMessage}</p>}
+          </div>
+        </div>
+      )}
     </>
   );
 }

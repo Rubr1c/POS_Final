@@ -9,6 +9,18 @@ const EmployeeHome: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<string>("scan-product-tab");
   const [name, setName] = useState<string>("");
 
+  const tabButtonStyles =
+    "relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-purple-600 to-blue-500 group-hover:from-purple-600 group-hover:to-blue-500 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-blue-300";
+
+  const tabSpanStyles =
+    "relative px-5 py-2.5 transition-all ease-in duration-75 bg-white rounded-md group-hover:bg-opacity-0 text-black";
+
+  const subtabButtonStyles =
+    "relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-green-400 to-blue-600 group-hover:from-green-400 group-hover:to-blue-600 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-green-200";
+
+  const subtabSpanStyles =
+    "relative px-5 py-2.5 transition-all ease-in duration-75 bg-white rounded-md group-hover:bg-opacity-0 text-black";
+
   const router = useRouter();
 
   useEffect(() => {
@@ -26,14 +38,6 @@ const EmployeeHome: React.FC = () => {
       if (res.data.success) router.push("/Login");
     });
   };
-
-  // Define Tailwind CSS class names as variables
-  const activeTabClass =
-    "tablink active bg-white border border-gray-800 text-blue-500";
-  const inactiveTabClass =
-    "tablink bg-white border border-gray-800 text-blue-500";
-  const activeSubTabClass = "subtablink active bg-white text-blue-500";
-  const inactiveSubTabClass = "subtablink bg-white text-blue-500";
 
   const openTab = (tabName: string) => {
     setActiveTab(tabName);
@@ -61,47 +65,68 @@ const EmployeeHome: React.FC = () => {
 
   return (
     <div>
-      <div className="flex justify-between mx-5">
-        <h2>Welcome {name}</h2>
-        <button onClick={handleLogout} className="btn btn-danger">
+      <div className="flex justify-between mx-5 mt-5">
+        <h2 className="font-bold">Welcome {name}!</h2>
+        <button onClick={handleLogout} className="text-white bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">
           Logout
         </button>
       </div>
       <div className="tabs">
+        <div className="flex justify-center">
         <button
           className={
-            activeTab === "purchase" ? activeTabClass : inactiveTabClass
+            activeTab == "purchase"
+              ? `${tabButtonStyles} bg-gradient-to-br from-purple-600 to-blue-500`
+              : tabButtonStyles
           }
           onClick={() => openTab("purchase")}
         >
-          Purchase
+          <span
+            className={
+              activeTab == "purchase"
+                ? `${tabSpanStyles} bg-gradient-to-br from-purple-600 to-blue-500`
+                : tabSpanStyles
+            }
+          >
+            {" "}
+            Purchase{" "}
+          </span>
         </button>
       </div>
       <div id="purchase" className="tabcontent">
         {activeTab === "purchase" && (
-          <div className="subtabs">
+          <div className="flex justify-center">
             <button
-              className={
-                activeSubTab === "scan-product-tab"
-                  ? activeSubTabClass
-                  : inactiveSubTabClass
-              }
+              className={subtabButtonStyles}
               onClick={() => openSubTab("scan-product-tab")}
             >
-              Scan Product
+              <span
+                className={
+                  activeSubTab === "scan-product-tab"
+                    ? `${subtabSpanStyles} bg-gradient-to-br from-green-400 to-blue-600`
+                    : subtabSpanStyles
+                }
+              >
+                Scan Product
+              </span>
             </button>
             <button
-              className={
-                activeSubTab === "checkout-tab"
-                  ? activeSubTabClass
-                  : inactiveSubTabClass
-              }
+              className={subtabButtonStyles}
               onClick={() => openSubTab("checkout-tab")}
             >
-              Checkout
+              <span
+                className={
+                  activeSubTab === "checkout-tab"
+                    ? `${subtabSpanStyles} bg-gradient-to-br from-green-400 to-blue-600`
+                    : subtabSpanStyles
+                }
+              >
+                Checkout
+              </span>
             </button>
           </div>
         )}
+        </div>
       </div>
       <SubTabs activeSubTab={activeSubTab} />
     </div>

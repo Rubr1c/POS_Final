@@ -2,3 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background: rgb(10, 111, 181);
+  background: linear-gradient(
+    0deg,
+    rgba(10, 111, 181, 1) 0%,
+    rgba(58, 244, 255, 1) 100%
+  );
+}
+
+

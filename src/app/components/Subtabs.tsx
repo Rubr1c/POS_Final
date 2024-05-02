@@ -16,7 +16,7 @@ const SubTabs: React.FC<SubTabsProps> = ({ activeSubTab }) => {
   const [checkoutItems, setCheckoutItems] = useState<any[]>([]);
 
   return (
-    <div className="subtab bg-light border border-dark mx-5 pb-vh">
+    <div className="subtab bg-gradient-to-t from-black to-gray-700 border border-dark mx-5 pb-vh pb-96">
       <div
         className="subtabcontent"
         id="sold-products-tab"
@@ -25,7 +25,7 @@ const SubTabs: React.FC<SubTabsProps> = ({ activeSubTab }) => {
         <SoldProducts />
       </div>
       <div
-        className="subtabcontent"
+        className="subtabcontent overflow-y-auto max-h-[calc(100vh-4rem)] pb-52"
         id="product-graph-tab"
         style={{ display: activeSubTab === "product-graph-tab" ? "block" : "none" }}
       >
@@ -43,7 +43,6 @@ const SubTabs: React.FC<SubTabsProps> = ({ activeSubTab }) => {
         id="existing-products-tab"
         style={{ display: activeSubTab === "existing-products-tab" ? "block" : "none" }}
       >
-        <h2>Products</h2>
         <Products />
       </div>
       <div
