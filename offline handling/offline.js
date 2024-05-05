@@ -97,9 +97,6 @@ app.get("/Products", (req, res) => {
   res.json(products);
 });
 
-const generateProductId = () => {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2, 10);
-};
 
 app.get("/SoldProducts", (req, res) => {
   let sold_products = [];

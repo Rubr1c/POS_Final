@@ -99,6 +99,7 @@ const LoginPage: React.FC = () => {
                 <p className="text-red-500 text-sm font-bold">
                   {errors.password}
                 </p>
+                
               )}
             </div>
           </div>

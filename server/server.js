@@ -134,6 +134,8 @@ app.post("/Login", (req, res) => {
                 Username: adminData[0].username,
                 AdminName: adminData[0].username,
               });
+            } else {
+              return res.json({ error: "Incorrect password" });
             }
           }
         );
@@ -175,7 +177,7 @@ app.post("/Login", (req, res) => {
                   return res.json({
                     Login: false,
                     Admin: false,
-                    error: "Invalid password",
+                    error: "Incorrect password",
                   });
                 }
               }
@@ -184,7 +186,7 @@ app.post("/Login", (req, res) => {
             return res.json({
               Login: false,
               Admin: false,
-              error: "No existing accounts",
+              error: "No existing account",
             });
           }
         });

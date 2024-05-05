@@ -183,7 +183,7 @@ const Products: React.FC<ProductProps> = ({ status }) => {
                   selectedProduct
                     ? {
                         ...selectedProduct,
-                        Price: parseFloat(e.target.value) || 0,
+                        Quantity: parseFloat(e.target.value) || 0,
                       }
                     : null
                 )

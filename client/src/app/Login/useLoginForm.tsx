@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import checkInternetConnection from "../CheckInternet"
+import checkInternetConnection from "../CheckInternet";
 import axios from "axios";
 
 type User = {
@@ -33,10 +33,11 @@ const useLoginForm = () => {
           email: "",
           password: "",
         };
-        if (response.data.error === "Invalid password") {
-          newErrors.password = "Invalid password";
-        } else if (response.data.error === "No existing accounts") {
-          newErrors.email = "No existing accounts";
+
+        if (response.data.error === "Incorrect password") {
+          newErrors.password = "Incorrect password";
+        } else if (response.data.error === "No existing account") {
+          newErrors.email = "No existing account";
         }
         setErrors(newErrors);
         return { success: false };
@@ -55,9 +56,10 @@ const useLoginForm = () => {
   const connectToJson = async (user: User) => {
     try {
       await axios.post("http://localhost:3001/loadData").then((res) => {
-      if(!res.data.success) {
+        if (!res.data.success) {
           return { success: false };
-      }})
+        }
+      });
       const response = await axios.post("http://localhost:3001/Login", user);
       if (!response.data.Login) {
         const newErrors: Errors = {
@@ -81,7 +83,6 @@ const useLoginForm = () => {
     }
   };
 
-
   const handleSubmit = async (
     e: React.FormEvent<HTMLFormElement>,
     navigate: (path: string) => void
@@ -91,12 +92,12 @@ const useLoginForm = () => {
     const isConnected = await checkInternetConnection();
     if (!isConnected) {
       const offlineDbCon = await connectToJson(user);
-      console.log(await offlineDbCon)
+      console.log(await offlineDbCon);
       const success = offlineDbCon?.success;
       if (!success) {
         return;
       }
-      const path = "/home-offline"
+      const path = "/home-offline";
       router.push(path);
     } else {
       const onlineDbCon = await connectToDb(user);
