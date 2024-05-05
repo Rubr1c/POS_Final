@@ -76,9 +76,9 @@ const SignUpClient: React.FC = () => {
               >
                 Username
               </label>
-              {errors.username && (
+              {errors.length > 0 && (
                 <p className="text-red-500 text-sm font-bold pt-2">
-                  {errors.username}
+                  {errors[0].username && errors[0].username}{" "}
                 </p>
               )}
             </div>
@@ -100,11 +100,11 @@ const SignUpClient: React.FC = () => {
                 Email
               </label>
             </div>
-            {errors.email && (
-              <p className="text-red-500 text-sm font-bold pb-5">
-                {errors.email}
-              </p>
-            )}
+            {errors.length > 0 && (
+                <p className="text-red-500 text-sm font-bold pt-2">
+                  {errors[0].email && errors[0].email}{" "}
+                </p>
+              )}
             <div className="relative z-0 mb-5 group w-full">
               <input
                 type="password"
@@ -123,11 +123,11 @@ const SignUpClient: React.FC = () => {
                 Password
               </label>
             </div>
-            {errors.password && (
-              <p className="text-red-500 text-sm font-bold pb-5">
-                {errors.password}
-              </p>
-            )}
+            {errors.length > 0 && (
+                <p className="text-red-500 text-sm font-bold pt-2">
+                  {errors[0].password && errors[0].password}{" "}
+                </p>
+              )}
           </div>
           <button
             type="submit"

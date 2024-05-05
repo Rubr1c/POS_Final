@@ -1,7 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import checkInternetConnection from "../CheckInternet"
+import checkInternetConnection from "../CheckInternet";
 
 type User = {
   username: string;
@@ -21,7 +21,7 @@ const useSignUpForm = () => {
     email: "",
     password: "",
   });
-  const [errors, setErrors] = useState<Errors>({});
+  const [errors, setErrors] = useState<Array<Errors>>([]);
 
   const router = useRouter();
 
@@ -34,43 +34,52 @@ const useSignUpForm = () => {
   const validateUser = (value: string, name: string) => {
     switch (name) {
       case "username":
-        setErrors({});
         if (value.length < 4) {
-          setErrors({ username: "Username must be at least 4 characters" });
+          setErrors((e) => [
+            ...e,
+            { username: "Username must be at least 4 characters" },
+          ]);
           break;
         } else if (value.length > 14) {
-          setErrors({ username: "Username must be at most 14 characters" });
+          setErrors((e) => [
+            ...e,
+            { username: "Username must be at most 14 characters" },
+          ]);
           break;
         } else {
-          setErrors({});
+          setErrors((e) => e.filter((error) => !error.username));
           break;
         }
       case "email":
-        setErrors({});
         const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
         if (!emailPattern.test(value)) {
-          setErrors({ email: "Invalid Email" });
+          setErrors((e) => [...e, { email: "Invalid Email" }]);
           break;
         } else {
-          setErrors({});
+          setErrors((e) => e.filter((error) => !error.email));
           break;
         }
       case "password":
-        setErrors({});
         const passwordPattern =
           /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[a-zA-Z\d!@#$%^&*]{8,}$/;
         if (value.length < 8) {
-          setErrors({ password: "Password must be at least 8 characters" });
+          setErrors((e) => [
+            ...e,
+            { password: "Password must be at least 8 characters" },
+          ]);
           break;
         } else {
           if (!passwordPattern.test(value)) {
-            setErrors({
-              password:
-                "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (!@#$%^&*)",
-            });
+            setErrors((e) => [
+              ...e,
+              {
+                password:
+                  "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (!@#$%^&*)",
+              },
+            ]);
             break;
           }
-          setErrors({});
+          setErrors((e) => e.filter((error) => !error.password));
           break;
         }
     }
@@ -84,7 +93,7 @@ const useSignUpForm = () => {
       );
 
       if (response.data.error) {
-        setErrors({ email: response.data.error });
+        setErrors(e => [...e, { email: response.data.error }]);
         console.log(errors);
         return false;
       }
@@ -92,7 +101,7 @@ const useSignUpForm = () => {
     } catch (error: any) {
       if (error.response.status === 500) {
         console.log(error.response.status);
-        setErrors({ email: "User Already Exists" });
+        setErrors(e => [...e, { email: "User Already Exists" }]);
       }
       console.error(error);
       return false;
@@ -107,7 +116,7 @@ const useSignUpForm = () => {
       );
 
       if (response.data.error) {
-        setErrors({ email: response.data.error });
+        setErrors(e => [...e, { email: response.data.error }]);
         console.log(errors);
         return false;
       }
@@ -117,7 +126,7 @@ const useSignUpForm = () => {
       console.error(error);
       return false;
     }
-  }
+  };
 
   const handleSubmit = async (
     e: React.FormEvent<HTMLFormElement>,
@@ -127,7 +136,7 @@ const useSignUpForm = () => {
     if (Object.keys(errors).length > 0) {
       return;
     }
-    setErrors({});
+    setErrors([]);
 
     const isConnected = await checkInternetConnection();
 
