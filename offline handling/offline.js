@@ -34,6 +34,7 @@ app.get("/getData", (req, res) => {
 });
 
 app.post("/SignUp", (req, res) => {
+  offlineDB = JSON.parse(fs.readFileSync("offlineDB.json"));
   const { email, username, password } = req.body;
   const existingAdmin = offlineDB.admins.find(
     (admin) => admin.username === username
@@ -48,19 +49,21 @@ app.post("/SignUp", (req, res) => {
     username: username,
     password: password,
   });
-  res.json({ success: true });
   fs.writeFileSync("offlineDB.json", JSON.stringify(offlineDB));
+  res.json({ success: true });
 });
 
 app.post("/Login", (req, res) => {
+  offlineDB = JSON.parse(fs.readFileSync("offlineDB.json"));
   const { email, password } = req.body;
+
   let result = {};
   let existingAdmin;
-  for (let user of offlineDB.admins) {
-    if (user.email == email && user.password == password) {
-      existingAdmin = user.username;
-    }
-  }
+  console.log(email, password);
+  existingAdmin = offlineDB.admins.find(
+    (admin) => admin.email === email && admin.password === password
+  );
+  console.log(existingAdmin);
   if (!existingAdmin) {
     let existingEmployee;
     for (let user of offlineDB.employee) {
@@ -76,47 +79,59 @@ app.post("/Login", (req, res) => {
       session = result;
       return res.status(400).json(result);
     }
+    console.log(existingEmployee.admin);
     offlineDB.LoggedUserAdmin = existingEmployee.admin;
     result = { Login: true, Admin: false, AdminName: existingEmployee.admin };
     session = result;
+    fs.writeFileSync("offlineDB.json", JSON.stringify(offlineDB));
     return res.json(result);
   }
-  offlineDB.LoggedUserAdmin = existingAdmin;
-  result = { Login: true, Admin: true, AdminName: existingAdmin };
+  console.log(existingAdmin);
+  offlineDB.LoggedUserAdmin = existingAdmin.name;
+  result = { Login: true, Admin: true, AdminName: existingAdmin.name };
   session = result;
+  fs.writeFileSync("offlineDB.json", JSON.stringify(offlineDB));
   res.json(result);
 });
 
 app.get("/Products", (req, res) => {
+  offlineDB = JSON.parse(fs.readFileSync("offlineDB.json"));
   let products = [];
   for (let product of offlineDB.product) {
     if ((product.admin = offlineDB.LoggedUserAdmin)) {
       products.push(product);
     }
   }
+  fs.writeFileSync("offlineDB.json", JSON.stringify(offlineDB));
   res.json(products);
 });
 
-
 app.get("/SoldProducts", (req, res) => {
+  offlineDB = JSON.parse(fs.readFileSync("offlineDB.json"));
   let sold_products = [];
   for (let product of offlineDB.sold_products) {
     if ((product.admin = offlineDB.LoggedUserAdmin)) {
       sold_products.push(product);
     }
   }
+  fs.writeFileSync("offlineDB.json", JSON.stringify(offlineDB));
   res.json(sold_products);
 });
 
 app.get("/GetItemPrice", (req, res) => {
+  offlineDB = JSON.parse(fs.readFileSync("offlineDB.json"));
   const { product_id } = req.query;
+  console.log(product_id);
   const product = offlineDB.product.find(
     (product) => product.product_id === product_id
   );
-  res.json(product.Price);
+  console.log(product);
+  console.log(parseFloat(product.Price));
+  res.json({ Price: parseFloat(product.Price) });
 });
 
 app.get("/CheckProductIDs", (req, res) => {
+  offlineDB = JSON.parse(fs.readFileSync("offlineDB.json"));
   const product = req.query.product_id;
   for (let i = 0; i < offlineDB.product.length; i++) {
     if (offlineDB.product[i].product_id == product) {
@@ -127,7 +142,9 @@ app.get("/CheckProductIDs", (req, res) => {
 });
 
 app.post("/Checkout", (req, res) => {
+  offlineDB = JSON.parse(fs.readFileSync("offlineDB.json"));
   const products = req.body.items;
+  console.log(products);
   for (let product of products) {
     const productDB = offlineDB.product.find(
       (p) => p.product_id === product.product_id
@@ -151,50 +168,42 @@ app.post("/Checkout", (req, res) => {
   fs.writeFileSync("offlineDB.json", JSON.stringify(offlineDB));
 });
 
-app.get("/saveData", (req, res) => {
-  fs.writeFileSync("offlineDB.json", JSON.stringify(offlineDB));
-
-  res.json({ success: true });
-});
-
-app.post("/loadData", (req, res) => {
-  offlineDB = JSON.parse(fs.readFileSync("offlineDB.json"));
-
-  res.json({ success: true });
-});
-
 app.get("/syncOnline", (req, res) => {
   offlineDB = JSON.parse(fs.readFileSync("offlineDB.json"));
-  
+  const product = [];
   for (let i = 0; i < offlineDB.sold_products.length; i++) {
-    const product = [];
     product.push(offlineDB.sold_products[i]);
-    axios.post("http://localhost:8081/Checkout", { items: product });
   }
-  
+  axios.post("http://localhost:8081/Checkout", { items: product });
 
   for (let i = 0; i < offlineDB.admins.length; i++) {
     axios.post("http://localhost:8081/SignUp", offlineDB.admins[i]);
   }
 });
 
-app.get("/getAllProducts", (req, result) => {
-  axios
-    .get("http://localhost:8081/Products", {
+app.get("/getAllProducts", async (req, result) => {
+  offlineDB = JSON.parse(fs.readFileSync("offlineDB.json"));
+  async function getProducts() {
+    const response = await axios.get("http://localhost:8081/Products", {
       params: { admin: offlineDB.LoggedUserAdmin },
-    })
-    .then((response) => {
-      const products = [];
-      for (let i of response.data) {
-        products.push(i);
-      }
-      offlineDB.product = products;
-      result.json(response.data);
-    })
+    });
+    const products = response.data;
+    return products;
+  }
+
+  try {
+    const products = await getProducts();
+    offlineDB.product = products;
     fs.writeFileSync("offlineDB.json", JSON.stringify(offlineDB));
+    result.json({ message: "Products fetched successfully", products }); // Send a success response
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    result.status(500).json({ error: "Error fetching products" });
+  }
 });
 
 app.get("/Logout", (req, res) => {
+  offlineDB = JSON.parse(fs.readFileSync("offlineDB.json"));
   offlineDB.LoggedUserAdmin = "";
   session = {};
   res.json({ success: true });

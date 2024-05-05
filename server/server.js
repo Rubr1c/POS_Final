@@ -196,6 +196,7 @@ app.post("/Login", (req, res) => {
 });
 
 app.get("/Products", async (req, res) => {
+  console.log(req.query, req.body)
   try {
     const sql = "SELECT * FROM product WHERE admin = ?";
     const [rows, fields] = await db

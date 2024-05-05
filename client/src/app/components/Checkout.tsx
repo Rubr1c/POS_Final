@@ -32,7 +32,7 @@ const Checkout: React.FC<Props> = ({
                 params: { product_id: item.product_id },
               }
             );
-            return response.data.Price ?? 0;
+            return response.data.Price;
           } catch (error) {
             console.log(error);
             return 0;

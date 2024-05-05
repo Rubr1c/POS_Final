@@ -29,7 +29,6 @@ const SignUpClient: React.FC = () => {
         }
       } else {
         try {
-          await axios.post("http://localhost:3001/loadData");
           const res = await axios.get("http://localhost:3001/");
           if (res.data.Login) {
             if (res.data.Admin) {

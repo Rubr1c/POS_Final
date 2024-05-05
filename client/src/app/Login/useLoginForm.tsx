@@ -21,7 +21,7 @@ const useLoginForm = () => {
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setUser((prevUser) => ({ ...prevUser, [name]: value }));
+    setUser((prevUser) => ({...prevUser, [name]: value }));
   };
 
   const connectToDb = async (user: User) => {
@@ -47,7 +47,6 @@ const useLoginForm = () => {
         }
         return { success: true };
       }
-      true;
     } catch (error) {
       console.error(error);
     }
@@ -55,11 +54,7 @@ const useLoginForm = () => {
 
   const connectToJson = async (user: User) => {
     try {
-      await axios.post("http://localhost:3001/loadData").then((res) => {
-        if (!res.data.success) {
-          return { success: false };
-        }
-      });
+      
       const response = await axios.post("http://localhost:3001/Login", user);
       if (!response.data.Login) {
         const newErrors: Errors = {
@@ -77,7 +72,6 @@ const useLoginForm = () => {
         }
         return { success: true };
       }
-      true;
     } catch (error) {
       console.error(error);
     }
@@ -92,7 +86,6 @@ const useLoginForm = () => {
     const isConnected = await checkInternetConnection();
     if (!isConnected) {
       const offlineDbCon = await connectToJson(user);
-      console.log(await offlineDbCon);
       const success = offlineDbCon?.success;
       if (!success) {
         return;

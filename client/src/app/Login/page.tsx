@@ -29,7 +29,6 @@ const LoginPage: React.FC = () => {
         }
       } else {
         try {
-          await axios.post("http://localhost:3001/loadData");
           const res = await axios.get("http://localhost:3001/");
           if (res.data.Login) {
             if (res.data.Admin) {
@@ -50,6 +49,7 @@ const LoginPage: React.FC = () => {
   const handleNavigate = (path: string) => {
     router.push(path);
   };
+
 
   return (
     <div className="flex justify-center items-center min-h-screen">

@@ -42,7 +42,6 @@ const ProductScanner: React.FC<ProductScannerProps> = ({
         })
         .catch((err: any) => console.log(err));
     } else {
-      axios.post("http://localhost:3001/loadData");
       axios
         .get("http://localhost:3001/CheckProductIDs", {
           params: {

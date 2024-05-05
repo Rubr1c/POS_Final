@@ -34,7 +34,6 @@ const EmployeeHome: React.FC = () => {
   });
 
   useEffect(() => {
-    axios.post("http://localhost:3001/loadData");
     axios.get("http://localhost:3001/syncOnline");
     axios.get("http://localhost:3001/GetAllProducts");
   }, [router]);

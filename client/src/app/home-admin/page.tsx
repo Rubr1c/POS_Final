@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import Tabs from "../components/Tabs";
+import checkInternetConnection from "../CheckInternet";
 
 const AdminHome: React.FC = () => {
   const [name, setName] = useState<string>("");
@@ -22,7 +23,6 @@ const AdminHome: React.FC = () => {
   });
 
   useEffect(() => {
-    axios.post("http://localhost:3001/loadData");
     axios.get("http://localhost:3001/syncOnline");
     axios.get("http://localhost:3001/GetAllProducts");
   }, [router]);

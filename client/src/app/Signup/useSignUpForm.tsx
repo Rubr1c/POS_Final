@@ -109,7 +109,6 @@ const useSignUpForm = () => {
   };
   const addToJson = async (userData: User) => {
     try {
-      const load = await axios.post("http://localhost:3001/loadData");
       const response = await axios.post(
         "http://localhost:3001/SignUp",
         userData
