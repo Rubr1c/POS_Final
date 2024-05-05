@@ -65,6 +65,7 @@ app.get("/", (req, res) => {
 });
 
 app.post("/SignUp", (req, res) => {
+  console.log(req.body.password);
   bcrypt.hash(req.body.password, saltRounds, (err, hash) => {
     if (err) {
       return res.status(500).json({ error: "Error hashing password" });
@@ -83,10 +84,8 @@ app.post("/SignUp", (req, res) => {
       connection.query(insertSql, [insertValues], (err, data) => {
         connection.release();
 
-        if (err) {
-          console.error("Error executing insert query:", err);
-          return res.status(500).json({ error: "Query execution error" });
-        }
+        
+        
 
         return res.json({ success: true });
       });
@@ -195,10 +194,11 @@ app.post("/Login", (req, res) => {
 });
 
 app.get("/Products", async (req, res) => {
-  req.session.admin = req.session.admin ? req.session.admin : req.query.admin;
   try {
     const sql = "SELECT * FROM product WHERE admin = ?";
-    const [rows, fields] = await db.promise().query(sql, [req.session.admin]);
+    const [rows, fields] = await db
+      .promise()
+      .query(sql, [req.session.admin || req.query.admin]);
     return res.json(rows);
   } catch (err) {
     console.error("Error fetching products:", err);
@@ -312,10 +312,10 @@ app.get("/GetItemPrice", async (req, res) => {
 app.post("/AddEmployee", async (req, res) => {
   try {
     const hash = await bcrypt.hash(req.body.password, saltRounds);
-    const adminUsername = req.session.admin || req.body.admin;
+
     const sql =
       "INSERT INTO employee(`username`, `password`, `email`, `admin`) VALUES (?, ?, ?, ?)";
-    const values = [req.body.username, hash, req.body.email, adminUsername];
+    const values = [req.body.username, hash, req.body.email, req.session.admin];
     const [rows, fields] = await db.promise().query(sql, values);
     return res.json({ success: true });
   } catch (err) {
@@ -339,13 +339,8 @@ app.post("/EditEmployee", async (req, res) => {
   try {
     const hash = await bcrypt.hash(req.body.password, saltRounds);
     const sql =
-      "UPDATE employee SET username = ?, password = ?, email = ? WHERE admin = ?";
-    const values = [
-      req.body.username,
-      hash,
-      req.body.email,
-      req.session.admin_id,
-    ];
+      "UPDATE employee SET username = ?, password = ? WHERE email = ? AND admin = ?";
+    const values = [req.body.username, hash, req.body.email, req.session.admin];
     const [rows, fields] = await db.promise().query(sql, values);
     return res.json({ success: true });
   } catch (err) {
@@ -366,10 +361,11 @@ app.delete("/DeleteEmployee", async (req, res) => {
 });
 
 app.post("/Checkout", async (req, res) => {
+  console.log(req.body);
   try {
     const validQuantities = [];
 
-    for (const item of req.body.items) {
+    for (const item of req.body.items || req.body) {
       const [rows, fields] = await db
         .promise()
         .query("SELECT Quantity FROM product WHERE product_id = ?", [
@@ -383,10 +379,12 @@ app.post("/Checkout", async (req, res) => {
         validQuantities.push(true);
         const values = [
           item.product_id,
-          item.productName,
-          req.session.admin,
+          item.productName || item.name,
+          req.session.admin || item.admin,
           item.quantity,
-          new Date().toISOString().slice(0, 19).replace("T", " "), // Current date and time
+          item.date_sold
+            ? item.date_sold.slice(0, 19).replace("T", " ")
+            : new Date().toISOString().slice(0, 19).replace("T", " "),
         ];
         const sql =
           "INSERT INTO sold_products(`product_id`, `name`, `admin`, `quantity`, `date_sold`) VALUES (?)";
@@ -405,7 +403,6 @@ app.post("/Checkout", async (req, res) => {
     }
   } catch (err) {
     console.error("Error in checkout:", err);
-    return res.status(500).json({ error: "Error in checkout" });
   }
 });
 
