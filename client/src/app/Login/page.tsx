@@ -12,24 +12,25 @@ const LoginPage: React.FC = () => {
   axios.defaults.withCredentials = true;
 
   useEffect(() => {
-    (async () => {
+    const checkConnectionAndRedirect = async () => {
       const isConnected = await checkInternetConnection();
       if (isConnected) {
-        axios
-          .get("http://localhost:8081/")
-          .then((res) => {
-            if (res.data.valid) {
-              if (res.data.admin) {
-                router.push("/home-admin");
-              } else {
-                router.push("/home-employee");
-              }
+        try {
+          const res = await axios.get("http://localhost:8081/");
+          if (res.data.valid) {
+            if (res.data.admin) {
+              router.push("/home-admin");
+            } else {
+              router.push("/home-employee");
             }
-          })
-          .catch((err) => console.log(err));
+          }
+        } catch (err) {
+          console.log(err);
+        }
       } else {
-        await axios.post("http://localhost:3001/loadData");
-        axios.get("http://localhost:3001/").then((res) => {
+        try {
+          await axios.post("http://localhost:3001/loadData");
+          const res = await axios.get("http://localhost:3001/");
           if (res.data.Login) {
             if (res.data.Admin) {
               router.push("/home-admin");
@@ -37,9 +38,13 @@ const LoginPage: React.FC = () => {
               router.push("/home-employee");
             }
           }
-        });
+        } catch (err) {
+          console.log(err);
+        }
       }
-    })
+    };
+  
+    checkConnectionAndRedirect();
   }, []);
 
   const handleNavigate = (path: string) => {

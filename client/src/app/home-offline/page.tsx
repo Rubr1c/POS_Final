@@ -1,10 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import SubTabs from "../components/Subtabs";
 
-const EmployeeHome: React.FC = () => {
+const OfflineHome: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("purchase");
   const [activeSubTab, setActiveSubTab] = useState<string>("scan-product-tab");
   const [name, setName] = useState<string>("");
@@ -127,4 +127,4 @@ const EmployeeHome: React.FC = () => {
   );
 };
 
-export default EmployeeHome;
+export default OfflineHome;

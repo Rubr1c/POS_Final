@@ -16,7 +16,7 @@ import {
 import "chartjs-adapter-date-fns";
 import { format, parseISO } from "date-fns";
 
-// Register the required components
+
 Chart.register(
   CategoryScale,
   LinearScale,
@@ -213,7 +213,7 @@ const ProductChart = () => {
           <select
             value={selectedProduct !== null ? selectedProduct.toString() : ""}
             onChange={(e) => {
-              // Convert the selected value to a number or null
+              
               setSelectedProduct(
                 e.target.value !== "" ? Number(e.target.value) : null
               );
@@ -222,8 +222,8 @@ const ProductChart = () => {
             <option value="">Select a product</option>
             {products.map((product) => (
               <option
-                key={product.product_id} // Ensure this is unique
-                value={product.product_id.toString()} // Convert to string for comparison
+                key={product.product_id} 
+                value={product.product_id.toString()} 
               >
                 {product.Name}
               </option>

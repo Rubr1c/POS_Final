@@ -2,13 +2,15 @@ import { useState } from "react";
 import axios from "axios";
 import { error } from "console";
 
+interface Product {
+  product_id?: string;
+  name?: string;
+  price?: number;
+  quantity?: number;
+}
+
 const AddProduct: React.FC = () => {
-  const [product, setProduct] = useState({
-    product_id: "",
-    name: "",
-    price: 0.0,
-    quantity: 0,
-  });
+  const [product, setProduct] = useState<Product>();
 
   axios.defaults.withCredentials = true;
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import checkInternetConnection from "../CheckInternet"
 import axios from "axios";
